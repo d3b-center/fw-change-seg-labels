@@ -1,0 +1,68 @@
+{
+  "name": "change-seg-labels",
+  "label": "CaPTk util - change segmentation labels",
+  "description": "This tool changes the computer-generated segmentation labels from the CaPTk-BRATS pipeline.",
+  "author": "Ariana Familiar",
+  "maintainer": "Ariana <familiara@chop.edu>",
+  "source": "https://github.com/d3b-center/fw-change-seg-labels", 
+  "version": "0.0.0",
+  "license": "Apache-2.0",
+  "custom": {
+    "gear-builder": {
+      "category": "utility",
+      "image": "afam00/change-seg-labels:0.0.0"
+    },
+    "flywheel": {
+      "suite": "CaPTk"
+    }
+  },
+  "inputs": {
+    "seg_file": {
+      "base": "file",
+      "description": "Segmentation file output by the BRATS pipeline (typically brainTumorMask_SRI.nii.gz).",
+      "type": {
+        "enum": [
+          "nifti"
+        ]
+      }
+    }
+  },
+  "config": {
+      "output_name": {
+          "description": "Output file name (default = brainTumorMask_SRI_newLabels.nii.gz).",
+          "type": "string",
+          "default": "brainTumorMask_SRI_newLabels.nii.gz"
+      },
+      "label_1": {
+          "description": "Value to change label 1 (cystic-core) to (default = 3)",
+          "type": "number",
+          "default": 3
+      },
+      "label_2": {
+          "description": "Value to change label 2 (edema) to (default = 5)",
+          "type": "number",
+          "default": 5
+      },
+      "label_3": {
+          "description": "Value to change label 3 (non-enhancing) to (default = 2)",
+          "type": "number",
+          "default": 2
+      },
+      "label_4": {
+          "description": "Value to change label 4 (enhancing) to (default = 1)",
+          "type": "number",
+          "default": 1
+      }
+  },
+  "environment":{
+    "FSLDIR":"/usr/share/fsl/6.0",
+    "FSL_DIR":"${FSLDIR}",
+    "PWD":"/usr/share/fsl/6.0",
+    "FSLMULTIFILEQUIT":"TRUE",
+    "PATH":"/usr/share/fsl/6.0/bin/:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+    "POSSUMDIR":"/usr/share/fsl/6.0",
+    "FSLTCLSH":"/usr/bin/tclsh",
+    "FSLWISH":"/usr/bin/wish",
+    "FSLOUTPUTTYPE":"NIFTI_GZ"
+  }
+}

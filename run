@@ -1,0 +1,113 @@
+#!/bin/bash
+#
+# Run file for Flywheel gear
+# Ariana Familiar, May 2021
+
+CONTAINER="[change-seg-labels]"
+echo -e "$CONTAINER  Initiated"
+
+###############################################################################
+## Built to flywheel-v0 spec.
+
+FLYWHEEL_BASE=/flywheel/v0
+OUTPUT_DIR=$FLYWHEEL_BASE/output
+INPUT_DIR=$FLYWHEEL_BASE/input/seg_file
+MANIFEST=$FLYWHEEL_BASE/manifest.json
+CONFIG_FILE=$FLYWHEEL_BASE/config.json
+
+###############################################################################
+## Configure the ENV
+
+export USER=Flywheel
+
+###############################################################################
+## Execute the main processes
+
+## Find the input files
+im=$(find $INPUT_DIR/* -maxdepth 0 -type f -name "*.nii*")
+output_name=''
+labels=(1 2 3 4)
+
+# Parse config options from CONFIG file or MANIFEST
+if [[ -f $CONFIG_FILE ]]; then
+  echo "$CONTAINER  $CONFIG_FILE found. Loading config..."
+
+  output_name=$(jq -r <$CONFIG_FILE '''.config.output_name')
+  labels[0]=$(jq -r <$CONFIG_FILE '''.config.label_1')
+  labels[1]=$(jq -r <$CONFIG_FILE '''.config.label_2')
+  labels[2]=$(jq -r <$CONFIG_FILE '''.config.label_3')
+  labels[3]=$(jq -r <$CONFIG_FILE '''.config.label_4')
+
+else
+  echo "$CONTAINER  $CONFIG_FILE not found. Loading defaults from $MANIFEST..."
+
+  output_name=$(jq -r <$MANIFEST '''.config.output-name.default')
+  labels[0]=$(jq -r <$MANIFEST '''.config.label_1.default')
+  labels[1]=$(jq -r <$MANIFEST '''.config.label_2.default')
+  labels[2]=$(jq -r <$MANIFEST '''.config.label_3.default')
+  labels[3]=$(jq -r <$MANIFEST '''.config.label_4.default')
+
+fi
+
+## make sure value assignments are mutually exclusive
+label1=${labels[0]}
+label2=${labels[1]}
+label3=${labels[2]}
+label4=${labels[3]}
+if [[ "${label1}" == "${label2}" ]] || [[ "${label1}" == "${label3}" ]] || [[ "${label1}" == "${label4}" ]] || \
+   [[ "${label2}" == "${label3}" ]] || [[ "${label2}" == "${label4}" ]] || [[ "${label3}" == "${label4}" ]] ; then
+    echo "$CONTAINER  ERROR: incorrect new label values. Check that all values are specified and unique"
+    exit 1
+elif [[ "${label1}" == "1" ]] && [[ "${label2}" == "2" ]] && [[ "${label3}" == "3" ]] && [[ "${label4}" == "4" ]] ; then
+    echo "$CONTAINER  ERROR: all specified output values are equal to the input labels. Check configuration."
+    exit 1
+fi
+
+## If necessary input files are found, run the thing
+no_change=0
+if [[ -f $im ]] ; then
+  for i in {1..4} ; do
+    let indx=${i}-1
+    label=${labels[${indx}]}
+    file=temp_${i}.nii.gz
+    fslmaths ${im} -thr ${i} -uthr ${i} ${file} # extract only this label from input & create temp file
+    voxs=`fslstats ${file} -V`
+    if [[ "${voxs:0:1}" == "0" ]] ; then
+      echo "$CONTAINER  No voxels found for label $i ."
+      let no_change=${no_change}+1
+    elif [[ "${i}" != "${label}" ]] ; then
+      fslmaths ${file} -bin ${file}
+      fslmaths ${file} -add ${label} -sub 1 -thr ${label} ${file} # switch to new label
+      echo "$CONTAINER  Label $i changed to $label."
+    else
+      echo "$CONTAINER  Label $i value not changed." # target value equals orig value
+      let no_change=${no_change}+1
+    fi
+  done
+
+  ## combine layers back into single file
+  fslmaths temp_1.nii.gz -add \
+           temp_2.nii.gz -add \
+           temp_3.nii.gz -add \
+           temp_4.nii.gz \
+           ${OUTPUT_DIR}/${output_name}
+  rm temp_*
+
+  ############ Finish up #################
+  STATUS=$?
+else
+  echo "$CONTAINER  Input file not found!"
+  exit 1
+fi
+
+# Check exit status
+if [[ $STATUS == 0 ]]
+  then
+    echo -e "$CONTAINER  Done! Output file is $output_name"
+
+  else
+    echo "$CONTAINER  command returned a non-zero exit code = [$STATUS]."
+    exit 1
+fi
+
+exit 0
