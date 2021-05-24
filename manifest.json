@@ -5,12 +5,12 @@
   "author": "Ariana Familiar",
   "maintainer": "Ariana <familiara@chop.edu>",
   "source": "https://github.com/d3b-center/fw-change-seg-labels", 
-  "version": "0.0.0",
+  "version": "0.0.1",
   "license": "Apache-2.0",
   "custom": {
     "gear-builder": {
-      "category": "utility",
-      "image": "afam00/change-seg-labels:0.0.0"
+      "category": "converter",
+      "image": "afam00/change-seg-labels:0.0.1"
     },
     "flywheel": {
       "suite": "CaPTk"
