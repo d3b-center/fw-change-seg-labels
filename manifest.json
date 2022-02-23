@@ -9,7 +9,7 @@
   "license": "Apache-2.0",
   "custom": {
     "gear-builder": {
-      "category": "converter",
+      "category": "classifier",
       "image": "afam00/change-seg-labels:0.0.1"
     },
     "flywheel": {
